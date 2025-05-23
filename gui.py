@@ -131,6 +131,18 @@ def run_bot():
     send_button.config(state=tk.DISABLED)
     exit_button.config(state=tk.DISABLED)
     start_spinner()
+    
+    # Check if server is enabled, if not, enable it first
+    if not server_enabled:
+        try:
+            enable_server()
+        except Exception as e:
+            console.config(state='normal')
+            console.insert('end', f"Error enabling server: {e}\n", ('stderr',))
+            console.config(state='disabled')
+            on_bot_done()
+            return
+    
     def task():
         asyncio.run(main())
         root.after(0, on_bot_done)
