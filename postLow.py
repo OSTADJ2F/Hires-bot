@@ -92,7 +92,8 @@ def get_mp3_metadata(track_path: pathlib.Path):
         meta = MP3(track_path)
         
         # Get basic info
-        bitrate = getattr(meta.info, 'bitrate', 320)  # Default to 320 if not available
+        bitrate_bps = getattr(meta.info, 'bitrate', 320000)  # Default to 320000 if not available
+        bitrate = bitrate_bps // 1000  # Convert from bps to kbps
         
         # Extract ID3 tags
         album = meta.get("TALB", [str(track_path.parent.name)])[0] if meta.get("TALB") else str(track_path.parent.name)
@@ -171,7 +172,7 @@ async def post_album(album_path: pathlib.Path):
         cap_lines.append(escape_markdown(genre_hashtag, version=2))
     
     # Quality text for MP3 - using bitrate instead of bit depth
-    emoji = "🏅"  # Generic medal for lower quality
+    emoji = "💿"  # Generic medal for lower quality
     quality_text = escape_markdown(f'{bitrate} kbps MP3', version=2)
     cap_lines.append(f"{emoji} _{quality_text}_")
     
