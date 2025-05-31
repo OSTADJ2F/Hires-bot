@@ -104,7 +104,7 @@ def do_garbage_collection():
         lower_f = f.lower()
         if lower_f.endswith(".pid"):
             os.remove(f)
-        elif lower_f.endswith(".txt") and f not in ["bot_log.txt","credentials.txt","config.txt"]:
+        elif lower_f.endswith(".txt") and f not in ["bot_log.txt","credentials.txt","config.txt","download.txt"]:
             os.remove(f)
         elif lower_f.endswith(".binlog"):
             os.remove(f)
