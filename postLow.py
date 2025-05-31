@@ -34,7 +34,7 @@ with open("credentials.txt", "r") as f:
 CHAT_ID = locals().get('CHAT_ID_LOW', CHAT_ID)
 ROOT_DIR = locals().get('ROOT_DIR_LOW', ROOT_DIR)
 
-EXTRA_TEXT = "@amirhires"
+EXTRA_TEXT = "@amirlowres"
 
 SEVEN_ZIP_PATH = r"C:\Program Files\7-Zip\7z.exe"
 
@@ -171,10 +171,7 @@ async def post_album(album_path: pathlib.Path):
         cap_lines.append(escape_markdown(genre_hashtag, version=2))
     
     # Quality text for MP3 - using bitrate instead of bit depth
-    if bitrate >= 320:
-        emoji = "🥉"  # Bronze for MP3
-    else:
-        emoji = "🏅"  # Generic medal for lower quality
+    emoji = "🏅"  # Generic medal for lower quality
     quality_text = escape_markdown(f'{bitrate} kbps MP3', version=2)
     cap_lines.append(f"{emoji} _{quality_text}_")
     

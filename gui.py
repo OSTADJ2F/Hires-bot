@@ -6,7 +6,8 @@ import sys
 import threading
 from tkinter import scrolledtext
 import tkinter.simpledialog as simpledialog
-from postHi import main
+from postHi import main as postHi_main
+from postLow import main as postLow_main
 import re
 
 API_PATH = None
@@ -59,6 +60,11 @@ def update_server_status(canvas, enabled):
     canvas.delete("all")
     color = "green" if enabled else "red"
     canvas.create_oval(2, 2, 18, 18, fill=color)
+    # Update send button availability based on server status
+    if enabled:
+        send_button.config(state=tk.NORMAL)
+    else:
+        send_button.config(state=tk.DISABLED)
 
 def enable_server():
     global server_enabled
@@ -144,7 +150,9 @@ def animate_spinner():
 
 def on_bot_done():
     stop_spinner()
-    send_button.config(state=tk.NORMAL)
+    # Only enable send button if server is running
+    if server_enabled:
+        send_button.config(state=tk.NORMAL)
     exit_button.config(state=tk.NORMAL)
 
 def run_bot():
@@ -152,19 +160,27 @@ def run_bot():
     exit_button.config(state=tk.DISABLED)
     start_spinner()
     
-    # Check if server is enabled, if not, enable it first
-    if not server_enabled:
-        try:
-            enable_server()
-        except Exception as e:
-            console.config(state='normal')
-            console.insert('end', f"Error enabling server: {e}\n", ('stderr',))
-            console.config(state='disabled')
-            on_bot_done()
-            return
-    
     def task():
-        asyncio.run(main())
+        async def run_both_scripts():
+            console.config(state='normal')
+            console.insert('end', "> Starting FLAC albums posting (postHi)...\n", ('green',))
+            console.config(state='disabled')
+            
+            # Run postHi first
+            await postHi_main()
+            
+            console.config(state='normal')
+            console.insert('end', "> FLAC albums posting completed. Starting MP3 albums posting (postLow)...\n", ('green',))
+            console.config(state='disabled')
+            
+            # Run postLow after postHi completes
+            await postLow_main()
+            
+            console.config(state='normal')
+            console.insert('end', "> All albums posting completed!\n", ('green',))
+            console.config(state='disabled')
+        
+        asyncio.run(run_both_scripts())
         root.after(0, on_bot_done)
     threading.Thread(target=task, daemon=True).start()
 
@@ -249,7 +265,7 @@ root.title("Hires Bot GUI")
 left_frame = tk.Frame(root)
 left_frame.pack(side=tk.LEFT, padx=10, pady=10)
 
-send_button = tk.Button(left_frame, text="Send Albums", command=run_bot)
+send_button = tk.Button(left_frame, text="Send Albums", command=run_bot, state=tk.DISABLED)
 send_button.pack(padx=5, pady=5)
 
 download_button = tk.Button(left_frame, text="Download Song", command=download_song)
