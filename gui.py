@@ -154,22 +154,63 @@ def download_song():
         return
     download_button.config(state=tk.DISABLED)
     console.config(state='normal')
-    console.insert('end', f"> rip url {link}\n", ('stdout',))
+    console.insert('end', f"> Downloading FLAC (Quality 3) and MP3 (Quality 1) versions for: {link}\n", ('stdout',))
     console.config(state='disabled')
+    
     def task():
-        proc = subprocess.Popen(
-            f"rip url {link}",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True,
-            text=True
-        )
-        for line in proc.stdout:
-            print(line, end='')  # redirected to console
-        for line in proc.stderr:
-            print(line, end='', file=sys.stderr)
-        proc.wait()
-        root.after(0, lambda: download_button.config(state=tk.NORMAL))
+        try:
+            # Download FLAC version (Quality 3)
+            console.config(state='normal')
+            console.insert('end', f"> Starting FLAC download (Quality 3)...\n", ('green',))
+            console.config(state='disabled')
+            
+            flac_proc = subprocess.Popen(
+                f'rip -q 3 -f "C:\\Users\\amira\\StreamripDownloads\\FLAC" --no-progress url "{link}"',
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=True,
+                text=True
+            )
+            for line in flac_proc.stdout:
+                print(line, end='')
+            for line in flac_proc.stderr:
+                print(line, end='', file=sys.stderr)
+            flac_proc.wait()
+            
+            console.config(state='normal')
+            console.insert('end', f"> FLAC download completed\n", ('green',))
+            console.config(state='disabled')
+            
+            # Download MP3 version (Quality 1)
+            console.config(state='normal')
+            console.insert('end', f"> Starting MP3 download (Quality 1)...\n", ('green',))
+            console.config(state='disabled')
+            
+            mp3_proc = subprocess.Popen(
+                f'rip -q 1 -f "C:\\Users\\amira\\StreamripDownloads\\MP3" --no-progress url "{link}"',
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=True,
+                text=True
+            )
+            for line in mp3_proc.stdout:
+                print(line, end='')
+            for line in mp3_proc.stderr:
+                print(line, end='', file=sys.stderr)
+            mp3_proc.wait()
+            
+            console.config(state='normal')
+            console.insert('end', f"> MP3 download completed\n", ('green',))
+            console.insert('end', f"> All downloads finished!\n", ('green',))
+            console.config(state='disabled')
+            
+        except Exception as e:
+            console.config(state='normal')
+            console.insert('end', f"Error during download: {e}\n", ('stderr',))
+            console.config(state='disabled')
+        finally:
+            root.after(0, lambda: download_button.config(state=tk.NORMAL))
+    
     threading.Thread(target=task, daemon=True).start()
 
 def exit_app():
