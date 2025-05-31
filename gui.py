@@ -6,7 +6,7 @@ import sys
 import threading
 from tkinter import scrolledtext
 import tkinter.simpledialog as simpledialog
-from post import main
+from postHi import main
 import re
 
 API_PATH = None
