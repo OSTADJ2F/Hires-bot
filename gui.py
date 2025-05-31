@@ -13,6 +13,8 @@ API_PATH = None
 PY_PATH = None
 TELEGRAM_API_ID   = None
 TELEGRAM_API_HASH = None
+FLAC_PATH = None
+MP3_PATH = None
 server_enabled = False
 
 def read_config():
@@ -33,7 +35,25 @@ def read_config():
             elif k.strip().lower() == "telegram_api_hash":
                 TELEGRAM_API_HASH = v.strip()
 
+def read_download_paths():
+    global FLAC_PATH, MP3_PATH
+    if not os.path.exists("download.txt"):
+        # Set default paths if file doesn't exist
+        FLAC_PATH = "C:\\Users\\amira\\StreamripDownloads\\FLAC"
+        MP3_PATH = "C:\\Users\\amira\\StreamripDownloads\\MP3"
+        return
+    with open("download.txt", "r") as f:
+        for line in f:
+            if "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            if k.strip().upper() == "FLAC_PATH":
+                FLAC_PATH = v.strip()
+            elif k.strip().upper() == "MP3_PATH":
+                MP3_PATH = v.strip()
+
 read_config()
+read_download_paths()
 
 def update_server_status(canvas, enabled):
     canvas.delete("all")
@@ -159,13 +179,16 @@ def download_song():
     
     def task():
         try:
+            # Read the latest download paths
+            read_download_paths()
+            
             # Download FLAC version (Quality 3)
             console.config(state='normal')
-            console.insert('end', f"> Starting FLAC download (Quality 3)...\n", ('green',))
+            console.insert('end', f"> Starting FLAC download (Quality 3) to: {FLAC_PATH}\n", ('green',))
             console.config(state='disabled')
             
             flac_proc = subprocess.Popen(
-                f'rip -q 3 -f "C:\\Users\\amira\\StreamripDownloads\\FLAC" --no-progress url "{link}"',
+                f'rip -q 3 -f "{FLAC_PATH}" --no-progress url "{link}"',
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 shell=True,
@@ -183,11 +206,11 @@ def download_song():
             
             # Download MP3 version (Quality 1)
             console.config(state='normal')
-            console.insert('end', f"> Starting MP3 download (Quality 1)...\n", ('green',))
+            console.insert('end', f"> Starting MP3 download (Quality 1) to: {MP3_PATH}\n", ('green',))
             console.config(state='disabled')
             
             mp3_proc = subprocess.Popen(
-                f'rip -q 1 -f "C:\\Users\\amira\\StreamripDownloads\\MP3" --no-progress url "{link}"',
+                f'rip -q 1 -f "{MP3_PATH}" --no-progress url "{link}"',
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 shell=True,
