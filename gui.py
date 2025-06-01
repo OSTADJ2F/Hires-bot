@@ -60,11 +60,15 @@ def update_server_status(canvas, enabled):
     canvas.delete("all")
     color = "green" if enabled else "red"
     canvas.create_oval(2, 2, 18, 18, fill=color)
-    # Update send button availability based on server status
+    # Update send buttons availability based on server status
     if enabled:
-        send_button.config(state=tk.NORMAL)
+        send_hi_button.config(state=tk.NORMAL)
+        send_low_button.config(state=tk.NORMAL)
+        send_both_button.config(state=tk.NORMAL)
     else:
-        send_button.config(state=tk.DISABLED)
+        send_hi_button.config(state=tk.DISABLED)
+        send_low_button.config(state=tk.DISABLED)
+        send_both_button.config(state=tk.DISABLED)
 
 def enable_server():
     global server_enabled
@@ -150,13 +154,63 @@ def animate_spinner():
 
 def on_bot_done():
     stop_spinner()
-    # Only enable send button if server is running
+    # Only enable buttons if server is running
     if server_enabled:
-        send_button.config(state=tk.NORMAL)
+        send_hi_button.config(state=tk.NORMAL)
+        send_low_button.config(state=tk.NORMAL)
+        send_both_button.config(state=tk.NORMAL)
     exit_button.config(state=tk.NORMAL)
 
-def run_bot():
-    send_button.config(state=tk.DISABLED)
+def run_hi_bot():
+    send_hi_button.config(state=tk.DISABLED)
+    send_low_button.config(state=tk.DISABLED)
+    send_both_button.config(state=tk.DISABLED)
+    exit_button.config(state=tk.DISABLED)
+    start_spinner()
+    
+    def task():
+        async def run_hi_script():
+            console.config(state='normal')
+            console.insert('end', "> Starting FLAC albums posting (postHi)...\n", ('green',))
+            console.config(state='disabled')
+            
+            await postHi_main()
+            
+            console.config(state='normal')
+            console.insert('end', "> FLAC albums posting completed!\n", ('green',))
+            console.config(state='disabled')
+        
+        asyncio.run(run_hi_script())
+        root.after(0, on_bot_done)
+    threading.Thread(target=task, daemon=True).start()
+
+def run_low_bot():
+    send_hi_button.config(state=tk.DISABLED)
+    send_low_button.config(state=tk.DISABLED)
+    send_both_button.config(state=tk.DISABLED)
+    exit_button.config(state=tk.DISABLED)
+    start_spinner()
+    
+    def task():
+        async def run_low_script():
+            console.config(state='normal')
+            console.insert('end', "> Starting MP3 albums posting (postLow)...\n", ('green',))
+            console.config(state='disabled')
+            
+            await postLow_main()
+            
+            console.config(state='normal')
+            console.insert('end', "> MP3 albums posting completed!\n", ('green',))
+            console.config(state='disabled')
+        
+        asyncio.run(run_low_script())
+        root.after(0, on_bot_done)
+    threading.Thread(target=task, daemon=True).start()
+
+def run_both_bots():
+    send_hi_button.config(state=tk.DISABLED)
+    send_low_button.config(state=tk.DISABLED)
+    send_both_button.config(state=tk.DISABLED)
     exit_button.config(state=tk.DISABLED)
     start_spinner()
     
@@ -265,8 +319,14 @@ root.title("Hires Bot GUI")
 left_frame = tk.Frame(root)
 left_frame.pack(side=tk.LEFT, padx=10, pady=10)
 
-send_button = tk.Button(left_frame, text="Send Albums", command=run_bot, state=tk.DISABLED)
-send_button.pack(padx=5, pady=5)
+send_hi_button = tk.Button(left_frame, text="Send FLAC Albums", command=run_hi_bot, state=tk.DISABLED)
+send_hi_button.pack(padx=5, pady=5)
+
+send_low_button = tk.Button(left_frame, text="Send MP3 Albums", command=run_low_bot, state=tk.DISABLED)
+send_low_button.pack(padx=5, pady=5)
+
+send_both_button = tk.Button(left_frame, text="Send All Albums", command=run_both_bots, state=tk.DISABLED)
+send_both_button.pack(padx=5, pady=5)
 
 download_button = tk.Button(left_frame, text="Download Song", command=download_song)
 download_button.pack(padx=5, pady=5)
