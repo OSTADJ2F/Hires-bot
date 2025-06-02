@@ -269,7 +269,7 @@ async def post_album(album_path: pathlib.Path):
                 bot.send_document,
                 chat_id=CHAT_ID,
                 document=InputFile(f_zip, filename=z.name),
-                caption=f"🌟 {EXTRA_TEXT}",
+                caption=f"🗂 {EXTRA_TEXT}",
                 read_timeout=900,
             )
         await asyncio.sleep(3)
