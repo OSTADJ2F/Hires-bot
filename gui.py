@@ -174,19 +174,27 @@ def run_hi_bot():
     start_spinner()
     
     def task():
-        async def run_hi_script():
-            console.config(state='normal')
-            console.insert('end', "> Starting FLAC albums posting (postHi)...\n", ('green',))
-            console.config(state='disabled')
+        try:
+            # Create a new event loop for this thread
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
             
-            await postHi_main()
+            async def run_hi_script():
+                console.config(state='normal')
+                console.insert('end', "> Starting FLAC albums posting (postHi)...\n", ('green',))
+                console.config(state='disabled')
+                
+                await postHi_main()
+                
+                console.config(state='normal')
+                console.insert('end', "> FLAC albums posting completed!\n", ('green',))
+                console.config(state='disabled')
             
-            console.config(state='normal')
-            console.insert('end', "> FLAC albums posting completed!\n", ('green',))
-            console.config(state='disabled')
-        
-        asyncio.run(run_hi_script())
-        root.after(0, on_bot_done)
+            loop.run_until_complete(run_hi_script())
+        finally:
+            # Clean up the event loop
+            loop.close()
+            root.after(0, on_bot_done)
     threading.Thread(target=task, daemon=True).start()
 
 def run_low_bot():
@@ -197,19 +205,27 @@ def run_low_bot():
     start_spinner()
     
     def task():
-        async def run_low_script():
-            console.config(state='normal')
-            console.insert('end', "> Starting MP3 albums posting (postLow)...\n", ('green',))
-            console.config(state='disabled')
+        try:
+            # Create a new event loop for this thread
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
             
-            await postLow_main()
+            async def run_low_script():
+                console.config(state='normal')
+                console.insert('end', "> Starting MP3 albums posting (postLow)...\n", ('green',))
+                console.config(state='disabled')
+                
+                await postLow_main()
+                
+                console.config(state='normal')
+                console.insert('end', "> MP3 albums posting completed!\n", ('green',))
+                console.config(state='disabled')
             
-            console.config(state='normal')
-            console.insert('end', "> MP3 albums posting completed!\n", ('green',))
-            console.config(state='disabled')
-        
-        asyncio.run(run_low_script())
-        root.after(0, on_bot_done)
+            loop.run_until_complete(run_low_script())
+        finally:
+            # Clean up the event loop
+            loop.close()
+            root.after(0, on_bot_done)
     threading.Thread(target=task, daemon=True).start()
 
 def run_both_bots():
@@ -220,27 +236,35 @@ def run_both_bots():
     start_spinner()
     
     def task():
-        async def run_both_scripts():
-            console.config(state='normal')
-            console.insert('end', "> Starting FLAC albums posting (postHi)...\n", ('green',))
-            console.config(state='disabled')
+        try:
+            # Create a new event loop for this thread
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
             
-            # Run postHi first
-            await postHi_main()
+            async def run_both_scripts():
+                console.config(state='normal')
+                console.insert('end', "> Starting FLAC albums posting (postHi)...\n", ('green',))
+                console.config(state='disabled')
+                
+                # Run postHi first
+                await postHi_main()
+                
+                console.config(state='normal')
+                console.insert('end', "> FLAC albums posting completed. Starting MP3 albums posting (postLow)...\n", ('green',))
+                console.config(state='disabled')
+                
+                # Run postLow after postHi completes
+                await postLow_main()
+                
+                console.config(state='normal')
+                console.insert('end', "> All albums posting completed!\n", ('green',))
+                console.config(state='disabled')
             
-            console.config(state='normal')
-            console.insert('end', "> FLAC albums posting completed. Starting MP3 albums posting (postLow)...\n", ('green',))
-            console.config(state='disabled')
-            
-            # Run postLow after postHi completes
-            await postLow_main()
-            
-            console.config(state='normal')
-            console.insert('end', "> All albums posting completed!\n", ('green',))
-            console.config(state='disabled')
-        
-        asyncio.run(run_both_scripts())
-        root.after(0, on_bot_done)
+            loop.run_until_complete(run_both_scripts())
+        finally:
+            # Clean up the event loop
+            loop.close()
+            root.after(0, on_bot_done)
     threading.Thread(target=task, daemon=True).start()
 
 def add_to_queue():
