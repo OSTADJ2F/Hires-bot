@@ -167,7 +167,7 @@ async def post_album(album_path: pathlib.Path):
                     title=title,
                     caption=f"🌟 {EXTRA_TEXT}",  # Emojis at the start
                 )
-            await asyncio.sleep(3)
+            await asyncio.sleep(2)
 
     # ── archive ────────────────────────────────────────────
     def folder_size(p: pathlib.Path) -> int:

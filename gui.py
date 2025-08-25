@@ -17,6 +17,7 @@ TELEGRAM_API_ID   = None
 TELEGRAM_API_HASH = None
 FLAC_PATH = None
 MP3_PATH = None
+RIP_PATH = "C:/Users/amira/AppData/Local/Programs/Python/Python311/Scripts/rip.exe"
 server_enabled = False
 
 # Download queue variables
@@ -413,21 +414,31 @@ def download_from_queue():
                     console.config(state='disabled')
                     
                     flac_proc = subprocess.Popen(
-                        f'rip -q 3 -f "{FLAC_PATH}" --no-progress url "{link}"',
+                        f'"{RIP_PATH}" --no-progress -q 3 -f "{FLAC_PATH}" url "{link}"',
                         stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
                         shell=True,
                         text=True
                     )
+                    
+                    # Read output in real-time
                     for line in flac_proc.stdout:
-                        print(line, end='')
-                    for line in flac_proc.stderr:
-                        print(line, end='', file=sys.stderr)
+                        if line.strip():
+                            console.config(state='normal')
+                            console.insert('end', f"[FLAC] {line}", ('blue',))
+                            console.config(state='disabled')
+                            console.update()
+                    
                     flac_proc.wait()
                     
-                    console.config(state='normal')
-                    console.insert('end', f"> FLAC download completed\n", ('green',))
-                    console.config(state='disabled')
+                    if flac_proc.returncode == 0:
+                        console.config(state='normal')
+                        console.insert('end', f"> FLAC download completed successfully\n", ('green',))
+                        console.config(state='disabled')
+                    else:
+                        console.config(state='normal')
+                        console.insert('end', f"> FLAC download failed (exit code: {flac_proc.returncode})\n", ('red',))
+                        console.config(state='disabled')
                 
                 # Download MP3 if selected
                 if item['mp3']:
@@ -436,21 +447,31 @@ def download_from_queue():
                     console.config(state='disabled')
                     
                     mp3_proc = subprocess.Popen(
-                        f'rip -q 1 -f "{MP3_PATH}" --no-progress url "{link}"',
+                        f'"{RIP_PATH}" --no-progress -q 1 -f "{MP3_PATH}" url "{link}"',
                         stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
                         shell=True,
                         text=True
                     )
+                    
+                    # Read output in real-time
                     for line in mp3_proc.stdout:
-                        print(line, end='')
-                    for line in mp3_proc.stderr:
-                        print(line, end='', file=sys.stderr)
+                        if line.strip():
+                            console.config(state='normal')
+                            console.insert('end', f"[MP3] {line}", ('blue',))
+                            console.config(state='disabled')
+                            console.update()
+                    
                     mp3_proc.wait()
                     
-                    console.config(state='normal')
-                    console.insert('end', f"> MP3 download completed\n", ('green',))
-                    console.config(state='disabled')
+                    if mp3_proc.returncode == 0:
+                        console.config(state='normal')
+                        console.insert('end', f"> MP3 download completed successfully\n", ('green',))
+                        console.config(state='disabled')
+                    else:
+                        console.config(state='normal')
+                        console.insert('end', f"> MP3 download failed (exit code: {mp3_proc.returncode})\n", ('red',))
+                        console.config(state='disabled')
                 
                 # Update queue display after each item
                 root.after(0, update_queue_display)
