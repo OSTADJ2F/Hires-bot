@@ -1,3 +1,23 @@
-*.txt
-*.bat
+# Local config with secrets — copy from the *.example files, never commit.
+config.txt
+credentials.txt
+download.txt
+streamrip.toml
+
+# Legacy server PID file (runtime leftover).
+api_server_pid.txt
+
+# Local environment and toolchains.
+.venv/
+.tools/
+
+# Runtime data: album working copies, server state, logs.
+downloads/
+.downloads/
+.runtime/
+*.log
+*.binlog
+
+# Python caches.
 __pycache__/
+.pytest_cache/

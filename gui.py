@@ -4,10 +4,10 @@ import subprocess
 import os
 import sys
 import threading
-from tkinter import scrolledtext, ttk
+from tkinter import scrolledtext, ttk, messagebox
 import tkinter.simpledialog as simpledialog
-from postHi import main as postHi_main
-from postLow import main as postLow_main
+from pathlib import Path
+import shutil
 import re
 from collections import deque
 
@@ -17,12 +17,25 @@ TELEGRAM_API_ID   = None
 TELEGRAM_API_HASH = None
 FLAC_PATH = None
 MP3_PATH = None
-RIP_PATH = "C:/Users/amira/AppData/Local/Programs/Python/Python311/Scripts/rip.exe"
+RIP_PATH = str(Path(sys.executable).with_name("rip.exe"))
+if not Path(RIP_PATH).is_file():
+    RIP_PATH = shutil.which("rip") or RIP_PATH
+RIP_CONFIG_PATH = str(Path(__file__).resolve().with_name("streamrip.toml"))
 server_enabled = False
+server_process = None
 
 # Download queue variables
 download_queue = deque()
 downloading = False
+
+# Load Telegram credentials only when posting, so initial setup can open the GUI.
+async def postHi_main():
+    from postHi import main
+    await main()
+
+async def postLow_main():
+    from postLow import main
+    await main()
 
 def read_config():
     global API_PATH, PY_PATH, TELEGRAM_API_ID, TELEGRAM_API_HASH
@@ -77,58 +90,65 @@ def update_server_status(canvas, enabled):
         send_both_button.config(state=tk.DISABLED)
 
 def enable_server():
-    global server_enabled
+    global server_enabled, server_process
     if server_enabled:
         return
-    # ...start telegram API server...
-    subprocess.run([
-        "powershell",
-        "-command",
-        f"$process = Start-Process -FilePath '{API_PATH}' -ArgumentList '--api-id','{TELEGRAM_API_ID}','--api-hash','{TELEGRAM_API_HASH}','--local' -PassThru -WindowStyle Hidden; $process.Id | Out-File -FilePath 'api_server_pid.txt' -Encoding ASCII"
-    ], check=True)
+    read_config()
+    if not API_PATH or not os.path.isfile(API_PATH):
+        messagebox.showerror("Setup required", "Set TelegramApiServerPath in config.txt to the installed telegram-bot-api.exe.")
+        return
+    if not TELEGRAM_API_ID or not TELEGRAM_API_ID.isdigit() or not TELEGRAM_API_HASH:
+        messagebox.showerror("Setup required", "Enter telegram_api_id and telegram_api_hash in config.txt, then click Enable again.")
+        return
+    server_dir = Path(__file__).resolve().parent / ".runtime" / "telegram"
+    server_dir.mkdir(parents=True, exist_ok=True)
+    server_env = os.environ.copy()
+    server_env.update(TELEGRAM_API_ID=TELEGRAM_API_ID, TELEGRAM_API_HASH=TELEGRAM_API_HASH)
+    try:
+        with (server_dir / "server.log").open("a", encoding="utf-8") as log:
+            server_process = subprocess.Popen(
+                [API_PATH, "--local", "--http-ip-address=127.0.0.1"],
+                cwd=server_dir, env=server_env, stdout=log, stderr=subprocess.STDOUT,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+    except OSError as error:
+        messagebox.showerror("Server failed to start", str(error))
+        return
     server_enabled = True
     update_server_status(server_status_circle, True)
+    root.after(1000, check_server_process)
+
+def check_server_process():
+    global server_enabled, server_process
+    if server_process is None:
+        return
+    if server_process.poll() is not None:
+        server_process = None
+        server_enabled = False
+        update_server_status(server_status_circle, False)
+        messagebox.showerror("Server stopped", "The Telegram API server exited. See .runtime/telegram/server.log for details.")
+    else:
+        root.after(1000, check_server_process)
 
 def disable_server():
-    global server_enabled
+    global server_enabled, server_process
     if not server_enabled:
         return
-    # ...terminate the API server...
-    if os.path.exists("api_server_pid.txt"):
-        with open("api_server_pid.txt", "r") as f:
-            pid = f.read().strip()
-        if pid:
-            subprocess.run(["powershell", "-command", f"Stop-Process -Id {pid} -Force"], shell=True)
-    subprocess.run(["powershell", "-command", "Stop-Process -Name 'telegram-bot-api' -Force -ErrorAction SilentlyContinue"], shell=True)
-
-    if os.path.exists("api_server_pid.txt"):
-        os.remove("api_server_pid.txt")
+    if server_process is not None:
+        server_process.terminate()
+        try:
+            server_process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            server_process.kill()
+            server_process.wait()
+        server_process = None
     server_enabled = False
     update_server_status(server_status_circle, False)
 
 def do_garbage_collection():
-    # ...replicate .bat cleanup: remove leftover files...
+    # Only remove the PID file we own; preserve setup files and server data.
     if os.path.exists("api_server_pid.txt"):
         os.remove("api_server_pid.txt")
-    for f in os.listdir():
-        lower_f = f.lower()
-        if lower_f.endswith(".pid"):
-            os.remove(f)
-        elif lower_f.endswith(".txt") and f not in ["bot_log.txt","credentials.txt","config.txt","download.txt"]:
-            os.remove(f)
-        elif lower_f.endswith(".binlog"):
-            os.remove(f)
-    # Check for folders containing .binlog
-    for root_dir, dirs, files in os.walk(os.getcwd()):
-        for fl in files:
-            if fl.lower().endswith(".binlog"):
-                folder_path = os.path.join(root_dir, fl)
-                folder_dir = os.path.dirname(folder_path)
-                if folder_dir != os.getcwd() and os.path.exists(folder_dir):
-                    try:
-                        os.rmdir(folder_dir)
-                    except OSError:
-                        subprocess.run(["rmdir", "/s", "/q", folder_dir], shell=True)
 
 spinner_label = None
 spinner_running = False
@@ -414,10 +434,10 @@ def download_from_queue():
                     console.config(state='disabled')
                     
                     flac_proc = subprocess.Popen(
-                        f'"{RIP_PATH}" --no-progress -q 3 -f "{FLAC_PATH}" url "{link}"',
+                        [RIP_PATH, "--config-path", RIP_CONFIG_PATH, "--no-progress", "--no-db", "-q", "3", "-f", FLAC_PATH, "url", link],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT,
-                        shell=True,
+                        creationflags=subprocess.CREATE_NO_WINDOW,
                         text=True
                     )
                     
@@ -447,10 +467,10 @@ def download_from_queue():
                     console.config(state='disabled')
                     
                     mp3_proc = subprocess.Popen(
-                        f'"{RIP_PATH}" --no-progress -q 1 -f "{MP3_PATH}" url "{link}"',
+                        [RIP_PATH, "--config-path", RIP_CONFIG_PATH, "--no-progress", "--no-db", "-q", "1", "-f", MP3_PATH, "url", link],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT,
-                        shell=True,
+                        creationflags=subprocess.CREATE_NO_WINDOW,
                         text=True
                     )
                     
@@ -507,6 +527,7 @@ def exit_app():
 root = tk.Tk()
 root.title("Hires Bot GUI")
 root.geometry("1200x700")
+root.protocol("WM_DELETE_WINDOW", exit_app)
 
 # Create main container with three sections
 main_container = tk.Frame(root)
