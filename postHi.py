@@ -27,7 +27,23 @@ with open("credentials.txt", "r") as f:
 
 EXTRA_TEXT = "@amirhires"
 
-SEVEN_ZIP_PATH = r"C:\Program Files\7-Zip\7z.exe"
+def _read_seven_zip_path():
+    """7-Zip location is user-configured in config.txt (never hardcoded)."""
+    try:
+        with open("config.txt", "r") as f:
+            for line in f.read().splitlines():
+                if "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                if k.strip().lower().replace("_", "").replace(" ", "") == "sevenzippath":
+                    v = v.strip().strip('"')
+                    if v:
+                        return v
+    except OSError:
+        pass
+    return None
+
+SEVEN_ZIP_PATH = _read_seven_zip_path()
 
 request = HTTPXRequest(read_timeout=300, write_timeout=300)
 bot = Bot(
@@ -176,7 +192,7 @@ async def post_album(album_path: pathlib.Path):
     parent      = album_path.parent
     seven       = SEVEN_ZIP_PATH or shutil.which("7z") or shutil.which("7z.exe")
     if not seven:
-        raise FileNotFoundError("7z not found; set SEVEN_ZIP_PATH or add to PATH.")
+        raise FileNotFoundError("7z not found; set SevenZipPath in config.txt or add 7-Zip to PATH.")
 
     # Fix: Replace glob with iterdir and string checking
     for old in parent.iterdir():

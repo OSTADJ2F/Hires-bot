@@ -1,4 +1,5 @@
 TelegramApiServerPath=C:\Stuff\Telegram Bot\.tools\telegram-bot-api\bin\telegram-bot-api.exe
 PythonScriptPath=C:\Stuff\Telegram Bot\postHi.py
+SevenZipPath=C:\Program Files\7-Zip\7z.exe
 telegram_api_id=
 telegram_api_hash=

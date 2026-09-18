@@ -49,7 +49,7 @@ Typical flow: queue a Qobuz album URL → download FLAC + MP3 → **Send All Alb
 | Python | 3.12 (project `.venv` included; recreate with `requirements-lock.txt`) |
 | Music sources | Qobuz (primary, auth-token login), Tidal, Deezer, SoundCloud via streamrip |
 | Telegram | Any bot from [@BotFather](https://t.me/BotFather); local Bot API 10.3 server bundled under `.tools` |
-| Download tools | FFmpeg / FFprobe 9.0.1 (bundled), 7-Zip (uses `C:\Program Files\7-Zip\7z.exe`) |
+| Download tools | FFmpeg / FFprobe 9.0.1 (bundled), 7-Zip (you set its path as `SevenZipPath` in `config.txt`) |
 | Key packages | `python-telegram-bot` 22.8, `streamrip` 2.1.0, `Pillow` 10.4.0, `mutagen` 1.48.1, `playwright` 1.63.0 |
 
 > You need your own paid streaming subscription for hi-res downloads, your own
@@ -70,7 +70,8 @@ If this is a fresh clone, follow the full setup guide below first.
 
 - [Python 3.12](https://www.python.org/downloads/) (only needed to recreate
   `.venv`; the prepared folder already contains one).
-- [7-Zip](https://www.7-zip.org/) installed at `C:\Program Files\7-Zip\7z.exe`.
+- [7-Zip](https://www.7-zip.org/) installed — note the full path to `7z.exe`
+  (default `C:\Program Files\7-Zip\7z.exe`); you enter it in `config.txt` below.
 - A Telegram bot token from [@BotFather](https://t.me/BotFather).
 - API credentials from [my.telegram.org](https://my.telegram.org)
   (`telegram_api_id` + `telegram_api_hash`) for the local Bot API server.
@@ -95,7 +96,7 @@ fill them in:
 
 | File | Copy from | Contents |
 |---|---|---|
-| `config.txt` | `config.example` | `TelegramApiServerPath`, `PythonScriptPath`, `telegram_api_id`, `telegram_api_hash` |
+| `config.txt` | `config.example` | `TelegramApiServerPath`, `PythonScriptPath`, `SevenZipPath`, `telegram_api_id`, `telegram_api_hash` |
 | `credentials.txt` | `credentials.example` | `TOKEN`, `CHAT_ID`, `CHAT_ID_LOW`, `ROOT_DIR`, `ROOT_DIR_LOW` |
 | `download.txt` | `download.example` | `FLAC_PATH`, `MP3_PATH` |
 | `streamrip.toml` | (shipped) | Music-service account + quality settings (see below) |
@@ -105,9 +106,14 @@ Example `config.txt`:
 ```
 TelegramApiServerPath=C:\Stuff\Telegram Bot\.tools\telegram-bot-api\bin\telegram-bot-api.exe
 PythonScriptPath=C:\Stuff\Telegram Bot\postHi.py
+SevenZipPath=C:\Program Files\7-Zip\7z.exe
 telegram_api_id=123456
 telegram_api_hash=abcdef123456
 ```
+
+`SevenZipPath` is the full path to your `7z.exe` — no hardcoded location in the
+code; the posting scripts and the launcher both use this value (falling back to
+`7z` on `PATH` if it is empty). Update it if you installed 7-Zip elsewhere.
 
 Example `credentials.txt` (use the same channel ID twice if you only run one channel):
 
@@ -214,6 +220,7 @@ instructions ([Telegram Windows build docs](https://tdlib.github.io/telegram-bot
 | **Enable** fails / server exits | Check `telegram_api_id/hash` in `config.txt` and `.runtime\telegram\server.log`. |
 | Posts fail with file errors | Confirm the bot is admin in both channels and the IDs in `credentials.txt` are correct. |
 | `cover.jpg` missing errors | Keep `save_artwork = true` in `streamrip.toml`; posters require it. |
+| `7z not found` when posting | Set `SevenZipPath` in `config.txt` to your full `7z.exe` path (or add 7-Zip to `PATH`). |
 
 ## Links
 
